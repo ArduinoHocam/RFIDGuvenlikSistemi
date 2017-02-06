@@ -1,0 +1,114 @@
+#include<Servo.h>
+#include <SPI.h>
+#include <RFID.h>
+
+RFID rfid(10, 9); //sda ve reset pinleri.
+const byte kled = 7;
+const byte yled = 6;
+const byte buzzer = 3;
+boolean izin = true; // boolean değişken tanımladık.
+byte kart[5] = {107, 135, 241, 197, 216}; //sistemin tanıyacağı kartı kadediyoruz
+Servo servo;   //servo nesnesi oluşturduk.
+void setup()
+{
+  Serial.begin(9600);
+  SPI.begin();
+  rfid.init();  //RFID yi başlattık
+  pinMode(7, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(3, OUTPUT);
+  servo.attach(5); //    //servo yu hangi pinde olduğunu belirttik.
+}
+
+void loop()
+
+{
+  servo.write(0);  //servoyu 0 dereceye alıyoruz her seferinde.
+  izin = true;
+
+  if (rfid.isCard()) {  //eğer kart okunursa
+
+    Serial.println(" -ARDUINO HOCAM- RFID GUVENLIK SISTEMI------KART OKUNDU-----");
+
+    if (rfid.readCardSerial()) { // kart numaralarını yazdırdık.
+
+      Serial.println(" ");
+      Serial.println("KART NUMARASI");
+      Serial.println("");
+      Serial.print(rfid.serNum[0]);
+      Serial.print(" , ");
+      Serial.print(rfid.serNum[1]);
+      Serial.print(" , ");
+      Serial.print(rfid.serNum[2]);
+      Serial.print(" , ");
+      Serial.print(rfid.serNum[3]);
+      Serial.print(" , ");
+      Serial.print(rfid.serNum[4]);
+      Serial.println(" ");
+
+    }
+
+
+    for (int i = 0; i < 5; i++) //döngü yardımı ile kayıtlı kart ile karşılaştırma yapılıyor.
+    {
+      if (rfid.serNum[i] != kart[i])  // aynı kart değilse izin değişkeni FALSE.
+      {
+        izin = false;
+      }
+    }
+    if (izin == true)  //aynı kart ise izin değişkeni TRUE. TRUE ise aşağıdaki işlemler.
+    {
+
+
+
+
+      Serial.println("IZIN VERILDI");
+      digitalWrite(kled, LOW);
+      digitalWrite(buzzer, HIGH);
+      delay(50);
+      digitalWrite(buzzer, LOW);
+      delay(50);
+      digitalWrite(buzzer, HIGH);
+      delay(50);
+      digitalWrite(buzzer, LOW);
+      digitalWrite(yled, HIGH);
+      servo.write(90);
+      delay(2000);
+
+    }
+
+
+
+    else    // FALSE ise aşağıdaki işlemler.
+    {
+
+
+
+
+
+      Serial.println("IZINSIZ GIRIS!!!!!!!");
+      digitalWrite(buzzer, HIGH);
+      delay(300);
+      digitalWrite(buzzer, LOW);
+      digitalWrite(buzzer, HIGH);
+      delay(50);
+      digitalWrite(buzzer, LOW);
+      digitalWrite(buzzer, HIGH);
+      delay(50);
+      digitalWrite(buzzer, LOW);
+      digitalWrite(kled, HIGH);
+      delay(500);
+      digitalWrite(yled, LOW);
+      servo.write(0);
+      delay(2000);
+
+    }
+
+
+
+    rfid.halt();  //RFID sonlandırılıyor.
+  }
+  else                              //diğer türlü yeşil ve kırmızı LED ler sönsün.
+    digitalWrite(yled, LOW);
+  digitalWrite(kled, LOW);
+}
